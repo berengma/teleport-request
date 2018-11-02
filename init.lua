@@ -10,10 +10,20 @@ local version = "1.5"
 local tpr_list = {}
 local tphr_list = {}
 
+local forbidden = {
+		  {{685,-500,-1695},{1506,3000,-2396}},           -- lowland
+		  {{-1606,-400,-2281},{-2000,-700,-2434}},        -- Lilly 3
+		  {{-1766,-200,-2009},{-2144,3000,-2555}},        -- Lilly 2
+		  {{-2350,-100,-1544},{-2472,100,-1691}},         -- Lilly 1
+		  {{-613,-100,-1658},{-1195,300,2465}}            -- highland
+}
+
+
 minetest.register_privilege("tp_admin", {
 	description = "Admin overrides for tps_teleport.",
 	give_to_singleplayer=false
 })
+
 minetest.register_privilege("tp_tpc", {
 	description = "Allow player to teleport to coordinates (if permitted by area protection).",
 	give_to_singleplayer=true
@@ -34,7 +44,7 @@ local function find_free_position_near(pos)
 	end
 	return pos, false
 end
-
+ 
 local function parti(pos)
 	minetest.add_particlespawner(50, 0.4,
 		{x=pos.x + 0.5, y=pos.y, z=pos.z + 0.5}, {x=pos.x - 0.5, y=pos.y, z=pos.z - 0.5},
@@ -57,6 +67,28 @@ local function parti2(pos)
 		"tps_portal_parti.png")
 end
 
+local function nogo(user)
+	if not user then return true end
+	local player = minetest.get_player_by_name(user)
+	local tocheck = player:getpos()
+	
+	
+	for i,v in ipairs(forbidden) do
+	  local xmax = math.max(v[1][1],v[2][1])
+	  local xmin = math.min(v[1][1],v[2][1])
+	  local ymax = math.max(v[1][2],v[2][2])
+	  local ymin = math.min(v[1][2],v[2][2])
+	  local zmax = math.max(v[1][3],v[2][3])
+	  local zmin = math.min(v[1][3],v[2][3])
+	    
+	    if tocheck.x >= xmin and tocheck.x <= xmax and tocheck.y >= ymin and tocheck.y <= ymax and tocheck.z >= zmin and tocheck.z <= zmax then
+	      return true
+	    end
+	end
+	
+end
+	
+	
 --Teleport Request System
 local function tpr_send(sender, receiver)
 	if receiver == "" then
@@ -68,7 +100,12 @@ local function tpr_send(sender, receiver)
 		minetest.chat_send_player(sender, "There is no player by that name. Keep in mind this is case sensitive, and the player must be online.")
 		return
 	end
-
+	
+	if nogo(sender) then
+	      minetest.chat_send_player(sender, "/tpr disabled in this area.")
+	      return
+	end
+	
 	minetest.chat_send_player(receiver, sender ..' is requesting to teleport to you. /tpy to accept.')
 	minetest.chat_send_player(sender, 'Teleport request sent! It will time out in '.. timeout_delay ..' seconds.')
 
@@ -93,6 +130,11 @@ local function tphr_send(sender, receiver)
 		return
 	end
 
+	if nogo(sender) then
+	      minetest.chat_send_player(sender, "/tphr disabled in this area.")
+	      return
+	end
+	
 	minetest.chat_send_player(receiver, sender ..' is requesting that you teleport to them. /tpy to accept; /tpn to deny')
 	minetest.chat_send_player(sender, 'Teleport request sent! It will time out in '.. timeout_delay ..' seconds.')
 
