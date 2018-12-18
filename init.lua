@@ -101,8 +101,8 @@ local function tpr_send(sender, receiver)
 		return
 	end
 	
-	if nogo(sender) then
-	      minetest.chat_send_player(sender, "/tpr disabled in this area.")
+	if nogo(receiver) then
+	      minetest.chat_send_player(sender, "/tpr disabled in "..receiver.."'s area.")
 	      return
 	end
 	
